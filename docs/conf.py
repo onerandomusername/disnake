@@ -33,7 +33,6 @@ sys.path.append(os.path.abspath("extensions"))
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "builder",
     "sphinx.ext.autodoc",
     "sphinx.ext.extlinks",
     "sphinx.ext.intersphinx",
@@ -420,6 +419,13 @@ texinfo_documents = [
 
 
 def setup(app):
+    def add_custom_jinja2(app):
+        env = app.builder.templates.environment
+        env.tests["prefixedwith"] = str.startswith
+        env.tests["suffixedwith"] = str.endswith
+
+    app.connect("builder-inited", add_custom_jinja2)
+
     if app.config.language == "ja":
         app.config.intersphinx_mapping["py"] = ("https://docs.python.org/ja/3", None)
         app.config.html_context["discord_invite"] = "https://discord.gg/gJDbCw8aQy"
