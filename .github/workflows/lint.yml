@@ -2,9 +2,13 @@ name: lint
 
 on: [push, pull_request]
 
+
+
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
+    env:
+      PRE_COMMIT_HOME: ${{ github.workspace }}/.cache/pre-commit-cache
 
     steps:
     - name: Checkout code
@@ -21,10 +25,47 @@ jobs:
           setup.py
 
     - name: Install requirements
-      run: python -m pip install -r requirements_dev.txt
+      run: python -m pip install -r requirements_dev.txt black flake8
 
-    - name: Run pre-commit
-      uses: pre-commit/action@v2.0.3
+    # This step caches our pre-commit environment. To make sure we
+    # do create a new environment when our pre-commit setup changes,
+    # we create a cache key based on relevant factors.
+    - name: Pre-commit Environment Caching
+      uses: actions/cache@v2
+      with:
+        path: ${{ env.PRE_COMMIT_HOME }}
+        key: "precommit-0-${{ runner.os }}-${{ env.PRE_COMMIT_HOME }}-\
+        ${{ steps.python.outputs.python-version }}-\
+        ${{ hashFiles('./.pre-commit-config.yaml') }}"
+
+    # We will not run `black` or `flake8` here, as we will use a separate
+    # black and flake8 action. As pre-commit does not support user installs,
+    # we set PIP_USER=0 to not do a user install.
+    - name: Run pre-commit hooks
+      id: pre-commit
+      run: export PIP_USER=0; SKIP="no-commit-to-branch,black,flake8" pre-commit run --all-files
+
+    # Run black seperately as we don't want to reformat the files
+    # just error if something isn't formatted correctly.
+    - name: Check files with black
+      id: black
+      if: always() && (steps.pre-commit.outcome == 'success' || steps.pre-commit.outcome == 'failure')
+      run: black . --check --diff --color
+
+    # # Run flake8 and have it format the linting errors in the format of
+    # # the GitHub Workflow command to register error annotations. This
+    # # means that our flake8 output is automatically added as an error
+    # # annotation to both the run result and in the "Files" tab of a
+    # # pull request.
+    # #
+    # # Format used:
+    # # ::error file={filename},line={line},col={col}::{message}
+    # - name: Run flake8
+    #   id: flake8
+    #   if: always() && (steps.pre-commit.outcome == 'success' || steps.pre-commit.outcome == 'failure')
+    #   run: "flake8 \
+    #   --format='::error file=%(path)s,line=%(row)d,col=%(col)d::\
+    #   [flake8] %(code)s: %(text)s'"
 
 
   pyright:
