@@ -26,8 +26,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, cast
 
+from docutils import nodes
 from sphinx import addnodes
 
 if TYPE_CHECKING:
@@ -35,40 +36,35 @@ if TYPE_CHECKING:
     from sphinx.builders.html import StandaloneHTMLBuilder
     from sphinx.environment import BuildEnvironment
 
-GROUPED_SECTIONS = [("api", "api/index")]
+GROUPED_SECTIONS = {"api/": "api/index"}
 
 
 def html_page_context(app: Sphinx, pagename: str, templatename, context, doctree):
     """Event handler for the html-page-context signal.
     Modifies the context directly.
-     - Replaces the 'toc' value created by the HTML builder with one
+     - Replaces the `toc` value created by the HTML builder with one
        that shows all document titles and the local table of contents.
-     - Sets display_toc to True so the table of contents is always
-       displayed, even on empty pages.
-     - Replaces the 'toctree' function with one that uses the entire
-       document structure, ignores the maxdepth argument, and uses
-       only prune and collapse.
+     - Sets `display_toc` to True so the table of contents is always displayed.
     """
     # only work on grouped folders
-    if not pagename.startswith(tuple(x[0] for x in GROUPED_SECTIONS)):
+    index = next(
+        (index for name, index in GROUPED_SECTIONS.items() if pagename.startswith(name)), None
+    )
+    if index is None:
         return
 
-    if "toctree" not in context:
-        # json builder doesn't use toctree func, so nothing to replace
-        return
-
-    def make_toctree(collapse=True, maxdepth=-1, includehidden=True):
-        return get_rendered_toctree(
-            app.builder,  # type: ignore
-            pagename,
-            prune=False,
-            collapse=collapse,
-        )
-
-    context["toctree"] = make_toctree
+    rendered_toc = get_rendered_toctree(
+        app.builder,  # type: ignore
+        pagename,
+        index,
+        prune=False,
+        collapse=False,
+    )
+    context["toc"] = rendered_toc
+    context["display_toc"] = True
 
 
-def get_rendered_toctree(builder: StandaloneHTMLBuilder, docname, prune=False, collapse=True):
+def get_rendered_toctree(builder: StandaloneHTMLBuilder, docname: str, index: str, **kwargs):
     """Build the toctree relative to the named document,
     with the given parameters, and then return the rendered
     HTML fragment.
@@ -76,47 +72,37 @@ def get_rendered_toctree(builder: StandaloneHTMLBuilder, docname, prune=False, c
     fulltoc = build_full_toctree(
         builder,
         docname,
-        prune=prune,
-        collapse=collapse,
+        index,
+        **kwargs,
     )
-    if fulltoc is None:
-        return ""
     rendered_toc = builder.render_partial(fulltoc)["fragment"]
     return rendered_toc
 
 
-def build_full_toctree(builder: StandaloneHTMLBuilder, docname: str, prune: bool, collapse: bool):
+def build_full_toctree(builder: StandaloneHTMLBuilder, docname: str, index: str, **kwargs):
     """Return a single toctree starting from docname containing all
     sub-document doctrees.
     """
     env: BuildEnvironment = builder.env  # type: ignore
-    for name, index in GROUPED_SECTIONS:
-        if docname.startswith(name):
-            index = index
-            break
-
-    else:
-        return
     doctree = env.get_doctree(index)
-    toctrees = []
+    toctrees: List[nodes.Element] = []
     for toctreenode in doctree.traverse(addnodes.toctree):
         toctree = env.resolve_toctree(
             docname,
             builder,
             toctreenode,
-            collapse=collapse,
-            prune=prune,
             includehidden=True,
+            **kwargs,
         )
         if toctree is not None:
-            toctrees.append(toctree)
+            toctrees.append(cast(nodes.Element, toctree))
 
     if not toctrees:
-        return None
+        raise RuntimeError("Expected at least one toctree")
+
     result = toctrees[0]
     for toctree in toctrees[1:]:
-        if toctree:
-            result.extend(toctree.children)
+        result.extend(toctree.children)
     # env.resolve_references(result, docname, builder)
     return result
 

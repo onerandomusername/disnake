@@ -116,11 +116,7 @@
     {%- endfor %}
   </div>
   <div id="sidebar">
-    {%- if pagename.startswith('api/') %}
-      {{ toctree(collapse=False) }}
-    {%- elif display_toc %}
-      {%- include "localtoc.html" %}
-    {%- endif %}
+    {%- include "localtoc.html" %}
   </div>
 </aside>
 
