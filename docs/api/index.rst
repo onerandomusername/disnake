@@ -14,9 +14,12 @@ The following section outlines the API of disnake.
     disnake.
 
 .. toctree::
-    :titlesonly:
+    :name: api_toc
+    :hidden:
+    :maxdepth: 2
     :glob:
 
+    self
     *
 
 

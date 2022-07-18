@@ -35,6 +35,7 @@ sys.path.append(os.path.abspath("extensions"))
 # ones.
 extensions = [
     "builder",
+    "fulltoc",
     "sphinx.ext.autodoc",
     "sphinx.ext.extlinks",
     "sphinx.ext.intersphinx",
@@ -89,8 +90,8 @@ source_suffix = ".rst"
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
 
-# The master toctree document.
-master_doc = "index"
+# The root toctree document.
+root_doc = "index"
 
 # General information about the project.
 project = "disnake"
