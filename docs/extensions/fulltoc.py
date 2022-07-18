@@ -60,8 +60,10 @@ def html_page_context(app: Sphinx, pagename: str, templatename, context, doctree
         prune=False,
         collapse=False,
     )
+
     context["toc"] = rendered_toc
     context["display_toc"] = True
+    context["parent_index"] = index
 
 
 def get_rendered_toctree(builder: StandaloneHTMLBuilder, docname: str, index: str, **kwargs):
