@@ -35,8 +35,10 @@ if TYPE_CHECKING:
     from sphinx.builders.html import StandaloneHTMLBuilder
     from sphinx.environment import BuildEnvironment
 
+GROUPED_SECTIONS = [("api", "api/index")]
 
-def html_page_context(app: Sphinx, pagename, templatename, context, doctree):
+
+def html_page_context(app: Sphinx, pagename: str, templatename, context, doctree):
     """Event handler for the html-page-context signal.
     Modifies the context directly.
      - Replaces the 'toc' value created by the HTML builder with one
@@ -47,9 +49,9 @@ def html_page_context(app: Sphinx, pagename, templatename, context, doctree):
        document structure, ignores the maxdepth argument, and uses
        only prune and collapse.
     """
-    # rendered_toc = get_rendered_toctree(app.builder, pagename)
-    # context["toc"] = rendered_toc
-    # context['display_toc'] = True  # force toctree to display
+    # only work on grouped folders
+    if not pagename.startswith(tuple(x[0] for x in GROUPED_SECTIONS)):
+        return
 
     if "toctree" not in context:
         # json builder doesn't use toctree func, so nothing to replace
@@ -81,12 +83,19 @@ def get_rendered_toctree(builder: StandaloneHTMLBuilder, docname, prune=False, c
     return rendered_toc
 
 
-def build_full_toctree(builder: StandaloneHTMLBuilder, docname, prune, collapse):
+def build_full_toctree(builder: StandaloneHTMLBuilder, docname: str, prune: bool, collapse: bool):
     """Return a single toctree starting from docname containing all
     sub-document doctrees.
     """
     env: BuildEnvironment = builder.env  # type: ignore
-    doctree = env.get_doctree("api/index")
+    for name, index in GROUPED_SECTIONS:
+        if docname.startswith(name):
+            index = index
+            break
+
+    else:
+        return
+    doctree = env.get_doctree(index)
     toctrees = []
     for toctreenode in doctree.traverse(addnodes.toctree):
         toctree = env.resolve_toctree(
