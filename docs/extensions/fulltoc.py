@@ -79,6 +79,8 @@ def get_rendered_toctree(builder: StandaloneHTMLBuilder, docname, prune=False, c
         prune=prune,
         collapse=collapse,
     )
+    if fulltoc is None:
+        return ""
     rendered_toc = builder.render_partial(fulltoc)["fragment"]
     return rendered_toc
 
