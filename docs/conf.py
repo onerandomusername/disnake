@@ -47,7 +47,7 @@ extensions = [
     "sphinxcontrib.towncrier.ext",
     "hoverxref.extension",
     "notfound.extension",
-    "sphinx_search.extension",
+    # "sphinx_search.extension",
     "redirects",
     "fulltoc",
     "exception_hierarchy",
@@ -79,7 +79,7 @@ intersphinx_mapping = {
     "req": ("https://requests.readthedocs.io/en/latest/", None),
 }
 
-rst_prolog = """
+rst_epilog = """
 .. |coro| replace:: This function is a |coroutine_link|_.
 .. |maybecoro| replace:: This function *could be a* |coroutine_link|_.
 .. |coroutine_link| replace:: *coroutine*
