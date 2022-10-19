@@ -47,6 +47,7 @@ extensions = [
     "sphinxcontrib.towncrier.ext",
     "hoverxref.extension",
     "notfound.extension",
+    "sphinx_search.extension",
     "redirects",
     "fulltoc",
     "exception_hierarchy",
