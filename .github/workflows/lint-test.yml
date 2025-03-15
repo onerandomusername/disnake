@@ -29,14 +29,13 @@ jobs:
     # The only purpose of this is to create a lockfile, which will be cached
     # to be used with subsequent jobs.
     # This provides somewhat of a middle ground and avoids having each job lock dependencies on its own,
-    # while still not needing to commit a lockfile to the repo, which is discouraged for libraries as per
-    # https://pdm-project.org/en/latest/usage/lockfile/
+    # while still not needing to commit a lockfile to the repo, which is discouraged for libraries
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
 
     # Instead of setup-env, we call the cache-uv action here directly.
-    # This avoids having to install PDM, only to find out the cache is already up to date sometimes.
+    # This avoids having to install UV, only to find out the cache is already up to date sometimes.
     - name: Configure cache
       uses: ./.github/actions/cache-uv
       with:
@@ -86,33 +85,30 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+
+    - name: install uv
+      id: install-uv
+      uses: astral-sh/setup-uv@v5
     - name: Install dependencies
       run: uv sync --all-extras
 
-    - name: Add .venv/bin to PATH
-      run: dirname "$(pdm info --python)" >> $GITHUB_PATH
-
-    - name: Set pyright version
-      run: |
-        PYRIGHT_VERSION="$(pdm run python -c 'import pyright; print(pyright.__pyright_version__)')"
-        echo "PYRIGHT_VERSION=$PYRIGHT_VERSION" >> $GITHUB_ENV
+    - name: add .venv/bin to PATH
+      run: dirname "$(uv run which python)" >> $GITHUB_PATH
 
     - name: Run pyright (Linux)
-      uses: jakebailey/pyright-action@v2.2.1
+      uses: jakebailey/pyright-action@v2.3.2
       id: pyright-linux
       with:
-        version: ${{ env.PYRIGHT_VERSION }}
-        python-version: ${{ steps.setup-env.outputs.python-version }}
+        version: PATH
         python-platform: "Linux"
         annotate: ${{ matrix.python-version == '3.8' }}  # only add comments for one version
         warnings: true
 
     - name: Run pyright (Windows)
-      uses: jakebailey/pyright-action@v2.2.1
+      uses: jakebailey/pyright-action@v2.3.2
       if: always() && (steps.pyright-linux.outcome == 'success' || steps.pyright-linux.outcome == 'failure')
       with:
-        version: ${{ env.PYRIGHT_VERSION }}
-        python-version: ${{ steps.setup-env.outputs.python-version }}
+        version: PATH
         python-platform: "Windows"
         annotate: false  # only add comments for one platform (see above)
         warnings: true
