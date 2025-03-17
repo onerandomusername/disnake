@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import pathlib
-from typing import TYPE_CHECKING, Callable, Dict, List, Tuple, TypeVar
+from typing import TYPE_CHECKING, Callable, Dict, List, Tuple, TypeVar, Union
 
+import dependency_groups
 import nox
+import packaging
+import packaging.requirements
 
 if TYPE_CHECKING:
     from typing_extensions import Concatenate, ParamSpec
@@ -18,7 +21,6 @@ if TYPE_CHECKING:
 PYPROJECT = nox.project.load_toml()
 
 nox.options.error_on_external_run = True
-nox.options.reuse_venv = "yes"
 nox.options.default_venv_backend = "uv|virtualenv"
 nox.options.sessions = [
     "lint",
@@ -32,6 +34,28 @@ nox.needs_version = ">=2022.1.7"
 
 # used to reset cached coverage data once for the first test run only
 reset_coverage = True
+
+
+def get_dep_groups(*groups: str, python: Union[str, bool, None] = None) -> List[str]:
+    dependencies = dependency_groups.resolve(PYPROJECT["dependency-groups"], *groups)
+    installables = []
+    for dep in dependencies:
+        parsed_dep = packaging.requirements.Requirement(dep)
+        can_install = True
+        if parsed_dep.marker:
+            if isinstance(python, str):
+                env = {"python_version": python}
+                can_install &= parsed_dep.marker.evaluate(environment=env)
+            else:
+                can_install &= parsed_dep.marker.evaluate()
+
+        if not can_install:
+            continue
+
+        parsed_dep.marker = None
+        installables.append(str(parsed_dep))
+
+    return installables
 
 
 @nox.session
@@ -71,7 +95,7 @@ def docs(session: nox.Session) -> None:
 def lint(session: nox.Session) -> None:
     """Check all files for linting errors"""
     session.install("-e", ".")
-    session.install(*nox.project.dependency_groups(PYPROJECT, "tools"))
+    session.install(*get_dep_groups("tools"))
 
     session.run("pre-commit", "run", "--all-files", *session.posargs)
 
@@ -91,14 +115,14 @@ def slotscheck(session: nox.Session) -> None:
     session.run("python", "-m", "slotscheck", "--verbose", "-m", "disnake")
 
 
-@nox.session
+@nox.session(python="3.8")
 def autotyping(session: nox.Session) -> None:
     """Run autotyping.
 
     Because of the nature of changes that autotyping makes, and the goal design of examples,
     this runs on each folder in the repository with specific settings.
     """
-    session.install("-e", ".", *nox.project.dependency_groups(PYPROJECT, "codemod"))
+    session.install("-e", ".", *get_dep_groups("codemod", python=session.python))  # type: ignore
 
     base_command = ["python", "-m", "libcst.tool", "codemod", "autotyping.AutotypeCommand"]
     if not session.interactive:
@@ -155,10 +179,10 @@ def autotyping(session: nox.Session) -> None:
         )
 
 
-@nox.session(name="codemod")
+@nox.session(name="codemod", python="3.8")
 def codemod(session: nox.Session) -> None:
     """Run libcst codemods."""
-    session.install("-e", ".", *nox.project.dependency_groups(PYPROJECT, "codemod"))
+    session.install("-e", ".", *get_dep_groups("codemod", python=session.python))  # type: ignore
 
     base_command = ["python", "-m", "libcst.tool"]
     base_command_codemod = base_command + ["codemod"]

@@ -112,13 +112,14 @@ default-groups = ['nox', 'tools', 'changelog', 'codemod', 'typing', 'test', 'bui
 use_vars = true
 
 [tool.taskipy.variables]
-nox = "nox -Rs"
+nox = "nox -s"
 
 [tool.taskipy.tasks]
+autotyping = { cmd = "{nox} autotyping --", help = "Run autotyping codemoding" }
 pre_build = "{nox} check-manifest"
 build = { cmd = "uv run -m build", help = "Build a safe version of disnake" }
 ci = { cmd = "{nox}", help = "Run all valid CI" }
-codemod = { cmd = "{nox} codemod autotyping --" }
+codemod = { cmd = "{nox} codemod --" }
 docs = { cmd = "{nox} docs --", help = "Build the documentation for development" }
 lint = { cmd = "{nox} lint --", help = "Check all files for linting errors" }
 pyright = { cmd = "{nox} pyright --", help = "Run pyright" }
