@@ -34,6 +34,7 @@ runs:
       with:
         python-version: 3.8
         version: "2.20.1"
+        cache: false
 
     - if: ${{ steps.cache.outputs.cache-hit != 'true' }}
       name: Lock all dependencies

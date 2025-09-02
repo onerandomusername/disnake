@@ -20,7 +20,9 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
         version: "2.20.1"  # last version to support python 3.8
-        cache: false
+        cache: true
+        cache-dependency-path: |
+          pyproject.toml
 
     - name: Disable PDM version check
       shell: bash
