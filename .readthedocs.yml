@@ -17,3 +17,6 @@ python:
       path: .
       extra_requirements:
         - docs
+search:
+  ranking:
+    '*/api.html': 4
