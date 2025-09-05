@@ -1,0 +1,28 @@
+{
+	"name": "Disnake",
+	"image": "mcr.microsoft.com/devcontainers/base:debian",
+	"features": {
+		"ghcr.io/devcontainers/features/github-cli:1": {},
+		"ghcr.io/joshuanianji/devcontainer-features/github-cli-persistence:1": {},
+		"ghcr.io/devcontainers-extra/features/pdm:2": {},
+		"ghcr.io/jsburckhardt/devcontainer-features/uv:1": {}
+	},
+	"updateContentCommand": {
+		"prime_pythons": "uv python install 3.8 3.9 3.10 3.11 3.12 && uv python pin 3.8"
+	},
+	"postCreateCommand": "pdm install -G:all",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python",
+				"ms-python.vscode-pylance",
+				"charliermarsh.ruff",
+				"tamasfe.even-better-toml",
+				"GitHub.vscode-pull-request-github",
+				"eamodio.gitlens",
+				"GitHub.vscode-github-actions",
+				"bierner.github-markdown-preview"
+			]
+		}
+	}
+}

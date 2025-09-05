@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 
 *.json
+!devcontainer.json
 *.py[cod]
 *.log
 *.log.[0-9]*
